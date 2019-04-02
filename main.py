@@ -24,6 +24,9 @@ class Commander:
         logging.info("Commander address: {}".format(self.device.get_64bit_addr()))
 
     def discover_peer(self):
+        """
+            Search other connected device to the same Zigbee network
+        """
         def discover_callback(peer):
             logging.info("New peer: {}".format(peer.get_64bit_addr()))
             self.peers.append(peer)
@@ -42,6 +45,9 @@ class Commander:
         logging.info("Discovered: {} peers".format(len(self.peers)))
 
     def stop_all_task(self):
+        """
+            stop all thread
+        """
         self.run = False
         for task in self.tasks:
             if task.isAlive():
@@ -70,6 +76,9 @@ class Commander:
         self.device.add_data_received_callback(recv_callback)
 
     def listen_remote_event(self):
+        """
+            Listen remote event
+        """
         self.__listen_remote_AD(IOLINE_IN)
         self.__listen_remote_data()
 
@@ -91,4 +100,3 @@ if __name__ == "__main__":
     input()
 
     commander.stop_all_task()
-    
