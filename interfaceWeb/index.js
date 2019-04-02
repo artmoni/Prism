@@ -17,3 +17,18 @@ window.onclick = function(event) {
     modal.style.display = "none";
   }
 }
+
+var btn = document.querySelector('input');
+var txt = document.querySelector('p');
+
+btn.addEventListener('click', updateBtn);
+
+function updateBtn() {
+  if (btn.value === 'Allumer la lumière') {
+    btn.value = 'Arrêter la lumière';
+    txt.textContent = 'La lumière est allumée !';
+  } else {
+    btn.value = 'Allumer la lumière';
+    txt.textContent = 'La lumière est arrêtée.';
+  }
+}
