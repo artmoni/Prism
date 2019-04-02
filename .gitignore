@@ -1,2 +1,5 @@
 .idea
 .gradle
+discover.py
+test*
+.env
