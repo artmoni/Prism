@@ -9,6 +9,7 @@ BAUD_RATE = 9600
 IOLINE_IN = IOLine.DIO1_AD1
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+logging.getLogger("digi").setLevel(logging.WARNING)  # disable logging for digi module
 
 
 class Commander:
@@ -46,21 +47,31 @@ class Commander:
             if task.isAlive():
                 task.join()
 
-    def listen_remote_event(self):
+    def __listen_remote_AD(self, AD):
         def read_adc_task(peer):
             while True:
                 logging.info("[{}] {}".format(
                     peer.get_64bit_addr(),
-                    peer.get_adc_value(IOLINE_IN)
+                    peer.get_adc_value(AD)
                 ))
                 time.sleep(0.2)
         for peer in self.peers:
-            peer.set_io_configuration(IOLINE_IN, IOMode.ADC)
-            self.tasks.append(threading.Thread(target=read_adc_task, args=[peer]))
-        
-        for task in self.tasks:
+            peer.set_io_configuration(AD, IOMode.ADC)
+            task = threading.Thread(target=read_adc_task, args=[peer])
+            self.tasks.append(task)
             task.start()
 
+    def __listen_remote_data(self):
+        def recv_callback(msg):
+            logging.info("[{}] {}".format(
+                msg.remote_device.get_64bit_addr(),
+                msg.data.decode()
+            ))
+        self.device.add_data_received_callback(recv_callback)
+
+    def listen_remote_event(self):
+        self.__listen_remote_AD(IOLINE_IN)
+        self.__listen_remote_data()
 
     def __del__(self):
         if self.device.is_open():
@@ -80,3 +91,4 @@ if __name__ == "__main__":
     input()
 
     commander.stop_all_task()
+    
