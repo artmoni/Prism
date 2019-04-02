@@ -6,7 +6,7 @@ from digi.xbee.devices import XBeeDevice
 from digi.xbee.io import IOLine, IOMode
 
 BAUD_RATE = 9600
-IOLINE_IN = IOLine.DIO1_AD1
+IOLINE_IN = IOLine.DIO0_AD0
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 logging.getLogger("digi").setLevel(logging.WARNING)  # disable logging for digi module
@@ -55,14 +55,14 @@ class Commander:
 
     def __listen_remote_AD(self, AD):
         def read_adc_task(peer):
-            while True:
+            while self.run:
                 logging.info("[{}] {}".format(
                     peer.get_64bit_addr(),
-                    peer.get_adc_value(AD)
+                    peer.get_dio_value(AD)
                 ))
                 time.sleep(0.2)
         for peer in self.peers:
-            peer.set_io_configuration(AD, IOMode.ADC)
+            peer.set_io_configuration(AD, IOMode.DIGITAL_IN)
             task = threading.Thread(target=read_adc_task, args=[peer])
             self.tasks.append(task)
             task.start()
