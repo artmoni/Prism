@@ -3,3 +3,4 @@
 discover.py
 test*
 .env
+__pycache__
