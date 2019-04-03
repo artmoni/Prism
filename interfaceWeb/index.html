@@ -20,22 +20,25 @@
     </head>
 
     <body>
-        <button id="buttonModal">Open Modal</button>
-
-        <div id="accessDeniedModal" class="modal">
-            <div class="modal-content">
-                <span class="close">&times;</span>
-                <p>Access Denied</p>
-            </div>
-        </div>
-
         <div>
-            <input type="button" value="Allumer la lumière" class="styled">
+            <a class="waves-effect waves-light btn">Allumer la lumière</a>
+            <!--<input type="button" value="Allumer la lumière" class="styled">-->
             <p class="ledStatus">La lumière est arrêtée</p>  
         </div>
 
-  <!-- Modal Trigger -->
-  <button data-target="modal1" class="btn modal-trigger">Modal</button>
+        <!-- Modal Trigger -->
+        <a class="waves-effect waves-light btn modal-trigger" href="#modal1">Modal</a>
+
+        <!-- Modal Structure -->
+        <div id="modal1" class="modal">
+            <div class="modal-content">
+                <h4>Modal Header</h4>
+                <p>A bunch of text</p>
+            </div>
+            <div class="modal-footer">
+                <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+            </div>
+        </div>
 
     <!-- Compiled and minified JavaScript -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
