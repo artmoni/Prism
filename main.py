@@ -11,6 +11,7 @@ IOLINE_IN = IOLine.DIO0_AD0
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 logging.getLogger("digi").setLevel(logging.WARNING)  # disable logging for digi module
 
+
 class Peer:
 
     def __init__(self, device):
@@ -18,19 +19,19 @@ class Peer:
         self.tasks = []
         self.run = True
         logging.info("New peer: {}-{}".format(self.device.get_node_id(), self.device.get_64bit_addr()))
-    
+
     def light_off(self):
         try:
             self.device.set_dio_value(IOLine.DIO1_AD1, IOValue.HIGH)
         except:
             logging.warn("Error")
-    
+
     def light_on(self):
         try:
             self.device.set_dio_value(IOLine.DIO1_AD1, IOValue.LOW)
         except:
             logging.warn("Error")
-    
+
     def listen_from_ad(self, AD):
         def read_adc_task():
             while self.run:
@@ -53,7 +54,6 @@ class Peer:
         for task in self.tasks:
             if task.isAlive():
                 task.join()
-
 
 
 class Commander:
@@ -82,13 +82,13 @@ class Commander:
         while self.network.is_discovery_running():
             time.sleep(1)
         logging.info("Discovered: {} peers".format(len(self.peers)))
-    
+
     def __listen_remote_data(self):
         def recv_callback(msg):
             logging.info("[{}] {}".format(
                 msg.remote_device.get_64bit_addr(),
-                msg.data.decode()
-            ))
+                msg.data.decode()))
+
         self.device.add_data_received_callback(recv_callback)
 
     def listen_remote_event(self):
@@ -98,7 +98,7 @@ class Commander:
         for peer in self.peers:
             peer.listen_from_ad(IOLINE_IN)
         self.__listen_remote_data()
-    
+
     def light_play(self):
         while True:
             for peer in self.peers:
@@ -123,9 +123,9 @@ if __name__ == "__main__":
     commander = Commander(args.port)
 
     commander.discover_peer()
-    #commander.listen_remote_event()
+    # commander.listen_remote_event()
     commander.light_play()
 
     input()
 
-    #commander.stop_all_task()
+    # commander.stop_all_task()
