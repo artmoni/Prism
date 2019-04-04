@@ -9,19 +9,20 @@ socketPrism = new WebSocket(url);
 socketPrism.onopen = function(event) 
 {
     socketPrism.send("Authentification"); 
-}
 
-function readData()
-{
+    password = event.data;
+
     if(!password)
     {
         print("Access authorized");
         light = "G";
+        send(light);
     }
     else if(password)
     {
         print("Access denied");
         light = "R";
+        send(light);
     }
 }
 
