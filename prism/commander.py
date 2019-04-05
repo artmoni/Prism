@@ -27,8 +27,8 @@ class Commander:
         self.run = True
         self.device.open()
         self.code = CODE
-        self.on_success = lambda : None
-        self.on_error = lambda : None
+        self.on_success = None
+        self.on_error = None
         logging.info("Commander address: {}".format(self.device.get_64bit_addr()))
     
     def set_on_error(self, callback):
@@ -66,8 +66,25 @@ class Commander:
             except:
                 pass
             yield from asyncio.sleep(60)
-    
-    
+
+    def light_red(self):
+        self.lock.acquire()
+        for peer in self.peers:
+            peer.light_red()
+        self.lock.release()
+
+    def light_blue(self):
+        self.lock.acquire()
+        for peer in self.peers:
+            peer.light_blue()
+        self.lock.release()
+
+    def light_green(self):
+        self.lock.acquire()
+        for peer in self.peers:
+            peer.light_green()
+        self.lock.release()
+
     def listen_remote(self):
         def data_recv_callback(msg):
             logging.info("[{}] {}".format(
@@ -76,15 +93,17 @@ class Commander:
         
         def samples_recv_callback(sample, remote, time):
 
+            remote = Peer(remote)
+
             def check(btn):
-                if self.code[0] == btn:
+                if len(self.code) > 0 and self.code[0] == btn:
                     self.code.pop()
                 else:
                     self.code = CODE
                     remote.light_red()
                     self.on_error()
 
-            logging.info("[{}] {}".format(remote.get_64bit_addr(), sample))
+            logging.info("[{}] {}".format(remote.get_addr(), sample))
 
             if sample.get_digital_value(BTN_ONE) == IOValue.HIGH:
                 check(BTN_ONE)
@@ -93,6 +112,7 @@ class Commander:
             elif sample.get_digital_value(BTN_THREE) == IOValue.HIGH:
                 check(BTN_THREE)
             if len(self.code) == 0:
+                self.code = CODE
                 remote.light_green()
                 self.on_success()
                 

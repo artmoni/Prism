@@ -11,7 +11,9 @@ var contentScreen = document.getElementById("content");
 socketPrism = new WebSocket(url);
 
 socketPrism.onopen = function(event) 
-{
+{ }
+socketPrism.onmessage = function (event) {
+    console.log(event)
     if (event.data == "OK") {
         loginScreen.style = "display: none;";
         errorScreen.style = "display: none;";
