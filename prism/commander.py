@@ -1,12 +1,20 @@
 import time
 import logging
-import websockets
+import asyncio
 from digi.xbee.devices import XBeeDevice
 from digi.xbee.io import IOLine, IOMode, IOValue
+from threading import Lock
 from .peer import Peer
 
 BAUD_RATE = 9600
 IOLINE_IN = IOLine.DIO0_AD0
+
+BTN_ONE = IOLine.DIO0_AD0
+BTN_TWO = IOLine.DIO5_AD5
+BTN_THREE = IOLine.DIO4_AD4
+
+
+CODE = [BTN_ONE, BTN_TWO, BTN_THREE]
 
 
 class Commander:
@@ -15,51 +23,82 @@ class Commander:
         self.device = XBeeDevice(comPort, BAUD_RATE)
         self.network = None
         self.peers = []
+        self.lock = Lock()
         self.run = True
         self.device.open()
+        self.code = CODE
+        self.on_success = lambda : None
+        self.on_error = lambda : None
         logging.info("Commander address: {}".format(self.device.get_64bit_addr()))
+    
+    def set_on_error(self, callback):
+        self.on_error = callback
+    
+    def set_on_success(self, callback):
+        self.on_success = callback
 
+    @asyncio.coroutine
     def discover_peer(self):
         """
             Search other connected device to the same Zigbee network
         """
-        logging.info("Starting discovering peer")
+        def push_peer(conn):
+            peer = Peer(conn)
+            if peer not in self.peers:
+                logging.info("New peer: {}".format(peer))
+                self.lock.acquire()
+                self.peers.append(peer)
+                self.lock.release()
+
         if self.network is None:
             self.network = self.device.get_network()
-        self.network.set_discovery_timeout(15)
+        self.network.set_discovery_timeout(25.5)
         self.network.clear()
 
-        self.network.add_device_discovered_callback(lambda peer: self.peers.append(Peer(peer)))
-        self.network.start_discovery_process()
+        self.network.add_device_discovered_callback(push_peer)
+        while self.run:
+            logging.info("running network scan...")
+            try:
+                self.network.start_discovery_process()
 
-        while self.network.is_discovery_running():
-            time.sleep(1)
-        logging.info("Discovered: {} peers".format(len(self.peers)))
-
-    def __listen_remote_data(self):
-        def recv_callback(msg):
+                while self.network.is_discovery_running():
+                    yield from asyncio.sleep(1)
+            except:
+                pass
+            yield from asyncio.sleep(60)
+    
+    
+    def listen_remote(self):
+        def data_recv_callback(msg):
             logging.info("[{}] {}".format(
                 msg.remote_device.get_64bit_addr(),
                 msg.data.decode()))
+        
+        def samples_recv_callback(sample, remote, time):
 
-        self.device.add_data_received_callback(recv_callback)
+            def check(btn):
+                if self.code[0] == btn:
+                    self.code.pop()
+                else:
+                    self.code = CODE
+                    remote.light_red()
+                    self.on_error()
 
-    def listen_remote_event(self):
-        """
-            Listen remote event
-        """
-        for peer in self.peers:
-            peer.listen_from_ad(IOLINE_IN)
-        #self.__listen_remote_data()
+            logging.info("[{}] {}".format(remote.get_64bit_addr(), sample))
 
-    def light_play(self):
-        while True:
-            for peer in self.peers:
-                peer.light_on()
-            time.sleep(2)
-            for peer in self.peers:
-                peer.light_off()
-            time.sleep(2)
+            if sample.get_digital_value(BTN_ONE) == IOValue.HIGH:
+                check(BTN_ONE)
+            elif sample.get_digital_value(BTN_TWO) == IOValue.HIGH:
+                check(BTN_TWO)
+            elif sample.get_digital_value(BTN_THREE) == IOValue.HIGH:
+                check(BTN_THREE)
+            if len(self.code) == 0:
+                remote.light_green()
+                self.on_success()
+                
+
+        self.device.add_data_received_callback(data_recv_callback)
+        self.device.add_io_sample_received_callback(samples_recv_callback)
 
     def __del__(self):
         for peer in self.peers:

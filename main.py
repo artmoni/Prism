@@ -7,6 +7,7 @@ from prism import Commander
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 logging.getLogger("digi").setLevel(logging.WARNING)  # disable logging for digi module
 
+commander = None
 
 @asyncio.coroutine
 def websocket_on_recv(websocket, shining_path):
@@ -17,15 +18,17 @@ def websocket_on_recv(websocket, shining_path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog='Prism')
     parser.add_argument('--com', required=True, help="COM/tty port")
-    parser.add_argument('--port', help="Websocket listen port")
+    parser.add_argument('--port', default=8080, help="Websocket listen port")
 
     args = parser.parse_args()
+    
     commander = Commander(args.com)
+    commander.listen_remote()
 
-    commander.discover_peer()
-    commander.listen_remote_event()
-    # commander.light_play()
+    tasks = [
+        asyncio.ensure_future(commander.discover_peer()),
+        asyncio.ensure_future(websockets.serve(websocket_on_recv, 'localhost', args.port))
+    ]
 
-    input()
-
-    # commander.stop_all_task()
+    asyncio.get_event_loop().run_until_complete(asyncio.wait(tasks))
+    asyncio.get_event_loop().run_forever()
